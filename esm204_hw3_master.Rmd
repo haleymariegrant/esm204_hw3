@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ---
 title: "ESM 204 HW 3 Appendix"
 author: "Jennifer Truong, Haley Grant, and Qusai B."
@@ -700,3 +701,705 @@ $\tau$ = `r round(tax_optimal, 2)`
 A tax of $`r round(tax_optimal, 2)` makes the local environmental quality equal between the gas tax situation and the electric car situation.
 
 
+=======
+---
+title: "ESM 204 HW 3 Appendix"
+author: "Jennifer Truong, Haley Grant, and Qusai B."
+date: "5/8/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE)
+
+# Attach packages
+
+library(tidyverse)
+library(janitor)
+library(ggpmisc)
+```
+
+
+```{r initial info}
+
+gas_price = 3.00
+local_externality = 1.50
+row_externality = .50
+
+# Read in data ----
+
+# Data frame w/ aggregate quantity for column
+gas_df <- read_csv("Homework 3 Data.csv") %>% 
+  clean_names() %>% 
+  # Add new column for aggregate demand
+  mutate(
+    q_aggregate = q_low_gallons + q_high_gallons
+  )
+
+# Data frame for calculating regression models
+gas_df_2 <- gas_df %>% 
+  # Use pivot_longer to condense data frame for easier graphing
+  pivot_longer(-price_dollars, names_to = 'type', values_to = 'gallons')
+
+```
+
+## Question 1
+
+```{r Low Income Demand Curve, results = "hide"}
+
+# Create linear regression model for low income demand curve
+lm_daily_low <- lm(price_dollars~q_low_gallons, data = gas_df)
+
+# Get summary of model outputs to pull values from table
+summary(lm_daily_low)
+# summary(lm_daily_low)$coefficients[1,1] - gets y-intercept of equation
+# summary(lm_daily_low)$coefficients[2,1] - gets slope of equation
+
+# Save into variables
+demand_low_y = summary(lm_daily_low)$coefficients[1,1]
+demand_low_slope = summary(lm_daily_low)$coefficients[2,1]
+
+# Create function for low income demand curve
+demand_low = function(x){y = 11.68548 - (6.611437*10^(-05))*x}
+
+# Low income demand curve: y = 11.68548 - 6.611437e-05x
+
+```
+
+```{r High Income Demand Curve, results = "hide"}
+
+# Create linear regression model for high income demand curve
+lm_daily_high <- lm(price_dollars~q_high_gallons, data = gas_df)
+
+# Get summary of model outputs to pull values from table
+summary(lm_daily_high)
+# summary(lm_daily_high)$coefficients[1,1] - gets y-intercept of equation
+# summary(lm_daily_high)$coefficients[2,1] - gets slope of equation
+
+# Save into variables
+demand_high_y = summary(lm_daily_high)$coefficients[1,1]
+demand_high_slope = summary(lm_daily_high)$coefficients[2,1]
+
+# Create function for low income demand curve
+demand_high = function(x){y = 15.80343 - (2.730926*10^(-05))*x}
+
+# High income demand curve: y = 15.80343 - 2.730926e-05x 
+```
+
+**‘Low’ income demand curve:** y = `r summary(lm_daily_low)$coefficients[1,1]` - `r summary(lm_daily_low)$coefficients[2,1]`x
+
+**‘High’ income demand curve:** y = `r summary(lm_daily_high)$coefficients[1,1]` - `r summary(lm_daily_low)$coefficients[2,1]`x
+
+```{r Aggregate demand curve}
+
+# Calculate co-efficients
+demand_agg_y = 755430.3/51742.92
+demand_agg_slope = -1/51742.92
+
+# Create function
+demand_agg = function(x){y = 14.59968 - (1.932632*10^(-05))*x}
+
+# Aggregate demand curve: y = 14.59968 - 1.932632e^{-05}x
+```
+
+$y_{low} = 11.68548 - 6.611437e-05x_{low}$
+$x_{low} = (11.68548/6.611437e-05) + (1/-6.611437e-05)y_{low}$
+$x_{low} = 176746.4 - 15125.3y_{low}$
+
+$y_{high} = 15.80343 - 2.730926e-05x_{high}$ 
+$x_{high} = (15.80343/2.730926e-05) + (1/-2.730926e-05)y_{high}$
+$x_{high} = 578683.9 - 36617.62y_{high}$
+
+$x_{agg} = (176746.4 + 578683.9) + ((1/-6.611437e-05)+(1/-2.730926e-05))$
+$x_{agg} = 755430.3 - 51742.92y$
+
+**Aggregate demand curve:** $y_{agg}$ = `r demand_agg_y` - `r demand_agg_slope`$x_{agg}$
+
+```{r Finding Market Equilibirum Quantity}
+# Set supply and aggregate demand curves equal to each other to find Q
+
+# 3 = 14.59968 - 1.932632e-05q
+q_equil = (gas_price - demand_agg_y)/demand_agg_slope
+```
+
+```{r Supply Curve}
+
+# To calculate supply curve, assume the following:
+#  - price intercept of 0 (y-intercept = 0)
+#  - linear
+#  - must intersect the aggregate demand curve at y = 3
+
+supply_slope = (3-0)/(q_equil - 0)
+
+supply_slope_2 = 1/200067
+
+supply_curve = function(gallons){price_dollars = supply_slope*gallons}
+```
+
+**Supply curve:** $y = (1/200,067)x$
+
+```{r Supply and Demand Graph}
+# Individual Demand Curves ---
+
+gas_demand_plot = ggplot(data = gas_df_2, aes(x = gallons, y = price_dollars, color = type)) +
+  geom_point(show.legend = FALSE) +
+  geom_smooth(method = 'lm', se = FALSE, size = 0.5, show.legend = TRUE) +
+  labs(x = 'gallons',
+       y = 'price',
+       title = '') +
+  theme_light()
+
+# Supply and Demand Plot ----
+
+gas_snd_plot = ggplot(data = gas_df_2, aes(x = gallons, y = price_dollars)) +
+  # Demand curves
+  stat_function(fun = demand_low,
+                aes(color = "demand_low")) +
+  stat_function(fun = demand_high,
+                aes(color = "demand_high")) +
+  # Aggregate demand curve
+  stat_function(fun = demand_agg,
+                aes(color = "demand_agg"),
+                size = 1.5) +
+  # Supply curve
+  stat_function(fun = supply_curve,
+                aes(color = "supply_curve"),
+                size = 1.5) + 
+  # Local externality
+  geom_hline(yintercept = local_externality, color = "red", show.legend = TRUE) +
+  # Rest of world (ROW) externality)
+  geom_hline(yintercept = row_externality, color = "blue", show.legend = TRUE) +
+  geom_hline(yintercept=0, color="black") + # Emphasize y-axis
+  geom_vline(xintercept=0, color="black") + # Emphasize x-axis
+  ylim(-3,15)
+
+gas_snd_plot
+
+```
+
+#### Consumer Benefit
+
+The benefit to consumers under the status quo is the consumer surplus (the area under the demand curve, which we integrate when the price is $`r gas_price`).
+
+$`r gas_price` = `r demand_agg_y` - `r demand_agg_slope`x
+
+x = `r q_equil` gallons
+
+```{r Finding Consumer Benefit}
+
+# Haley's math ---
+#area under the curve = 5,284,660
+
+# Find area under the demand curve
+
+# Find the total cost of gas
+gas_total_cost = gas_price*q_equil
+
+# Subtract total cost from whole area under curve
+
+
+
+```
+
+
+`r gas_total_cost` = `r gas_price`*`r q_equil`
+
+5,284,660 - `r gas_total_cost` = 3,484,057
+
+The consumer benefit is $___.
+
+#### Producer Benefit
+
+```{r Finding Producer Benefit}
+
+# Haley's math ---
+#  - area under supply curve when price = $3 for consumers
+#  - integrate y = 1.932632e-05x from 0 to 600201
+# area under the curve = 3,481,070
+```
+
+The benefit to producers under the status quo is the producer surplus (the area under the demand curve, which we integrate when the price is $`r gas_price`).
+
+The producer benefit is $___.
+
+#### Environmental Cost
+
+```{r Environmental Costs}
+
+# Local ---
+
+local_ec = local_externality*q_equil
+
+# Rest of world ---
+
+row_ec = row_externality*q_equil
+```
+
+##### Local
+
+The local environmental cost is `r local_ec`. It is the area under the curve from 0 to 600201, so we integrate $y = 1.50$ from 0 to 600201
+
+##### Rest of the world
+
+The rest of the world environmental cost is `r row_ec`. It is the area under the curve from 0 to 600201, so we integrate $y = 0.50$ from 0 to 600201
+
+## Question 2 - Individual Consumer Benefit
+
+#### Low Income
+
+```{r Low Income CS}
+
+# Find Q at equilbrium -----
+
+# 3 = 11.7 - 6.61*10^(-5)*q_low
+# (3-11.7) = - 6.61*10^(-5)*q_low
+
+q_low_cs = (gas_price - demand_low_y)/demand_low_slope
+  
+# Low Income CS ------
+
+cs_low = 0.5*(demand_low_y - gas_price)*q_low_cs
+
+```
+
+$x_{low}$ = (`r gas_price` - `r demand_low_y`)/`r demand_low_slope`
+
+The quantity for the low income demand curve where the price is $`r gas_price` is `r q_low_cs`. The consumer surplus is the area of a triangle.
+  
+`r cs_low` = 0.5 * (`r demand_low_y` - `r gas_price`) *`r q_low_cs`
+
+The consumer benefit for low income consumers is `r cs_low`.
+
+#### High Income
+
+```{r High Income CS}
+
+# Find Q at equilbrium -----
+
+# 3 = 15.80343 - 2.730926e-05x
+# 3 - 15.80343 = - 2.730926e-05x
+# (3 - 15.80343) / - 2.730926e-05 = x
+
+q_high_cs = (gas_price - demand_high_y)/demand_high_slope
+  
+# Low Income CS ------
+
+cs_high = 0.5*(demand_high_y - gas_price)*q_high_cs
+
+```
+
+$x_{high}$ = (`r gas_price` - `r demand_high_y`)/`r demand_high_slope`
+
+The quantity for the high income demand curve where the price is $`r gas_price` is `r q_high_cs`. 
+  
+`r cs_low` = 0.5 * (`r demand_high_y` - `r gas_price`) *`r q_high_cs`
+
+The consumer benefit for high income consumers is `r cs_high`.
+
+```{r Aggregate Benefit}
+
+cs_agg = cs_low + cs_high
+```
+
+The aggregate benefit is `r cs_agg`.
+
+
+## Question 3 - Effects from Gas Tax
+
+#### a) The amount of gasoline produced and consumed. 
+
+
+```{r Equilbrium Quantity after Tax}
+
+gas_tax = 1.00
+
+# Find new supply curve after tax - just add 1 to y-intercept?
+supply_curve_tax = function(x){y = supply_slope*x + gas_tax}
+
+# Find equilibrium after tax  ----
+
+# Set supply and aggregate demand curves equal to each other to find Q
+# --> y = (1/200,067x) + 1.00
+# --> (1/200,067x) + 1.00 = 14.59968 - 1.932632e-05x
+q_equil_tax = (demand_agg_y - gas_tax)/(supply_slope - demand_agg_slope)
+```
+
+
+$`r gas_tax` will be subtracted from every gallon purchased. 
+
+The new supply curve is $y - 1 = (1/200,067)x$. Less gas would be produced and consumed. Setting this new supply curve equal to the aggregate demand curve, the new equilibrium quantity is `r q_equil_tax` gallons.
+
+#### b) Gas price
+
+```{r Gas Price after Tax}
+
+gas_price_tax = supply_curve_tax(q_equil_tax)
+
+```
+
+The new gas price is `r round(gas_price_tax, 2)`/gallon at `r q_equil_tax` gallons.
+
+#### c) Welfare of 'high' income consumers
+
+```{r High Income CS after Tax}
+
+# Find new Q for equil for high income after tax
+
+# (1/200,067x) + 1.00 = 15.80343 - 2.730926e-05x
+# x = 458,203
+
+q_high_tax = (gas_tax - demand_high_y)/(demand_high_slope - supply_slope)
+
+# Ask Haley about this math later ---
+# 15.80343 - 2.730926e-05(458,203)
+# y = 3.29024514022
+
+# .5 * 458,203 * (15.80343 - 3.29024514022)
+# = 2,866,789.42115288767
+
+# Find consumer benefit ----
+
+cs_high_tax = 0.5*(demand_high_y - gas_price_tax)*q_high_tax
+```
+
+`r q_high_tax` = (`r gas_tax` - `r demand_high_y`)/(`r demand_high_slope` - `r supply_slope`)
+
+The quantity where P = `r round(gas_price_tax, 2)` is `r q_high_tax`
+
+`r cs_high_tax` = 0.5 * (`r demand_high_y` - `r gas_price_tax`) * `r q_high_tax`
+
+The welfare of high income customers after the tax is `r cs_high_tax`.
+
+#### d) Welfare of 'low' income consumers
+
+```{r Low Income CS after Tax}
+
+# Find new Q for equil for low income after tax
+
+# (1/200,067x) + 1.00 = 11.68548 - 6.611437e-05x
+# x = 150,261
+
+q_low_tax = (gas_tax - demand_low_y)/(demand_low_slope - supply_slope)
+
+# Ask Haley about this math later ---
+# 11.68548 - 6.611437e-05(150,261)
+# y = 1.75106864943
+
+# .5 * 150,261 * (11.68548 - 1.75106864943)
+# = 746,377.291973999385
+
+# Find consumer benefit ----
+
+cs_low_tax = 0.5*(demand_low_y - gas_price_tax)*q_low_tax
+```
+
+`r q_low_tax` = (`r gas_tax` - `r demand_low_y`)/(`r demand_low_slope` - `r supply_slope`)
+
+The quantity where P = `r round(gas_price_tax, 2)` is `r q_low_tax`
+
+`r cs_low_tax` = 0.5 * (`r demand_low_y` - `r gas_price_tax`) * `r q_low_tax`
+
+The welfare of low income customers after the tax is `r cs_low_tax`.
+
+#### e) Welfare of gas producers
+
+```{r PS after tax}
+
+# Find Q on original supply curve at P = 1
+
+# 3.795 = (1/200,067x) + 1.00
+# x = 559187
+q_ps_tax = (gas_price_tax - gas_tax)/supply_slope
+
+# Find PS after tax
+
+# integrate (1/200,067x) + 1.00 from 0 to 559187
+# = 1,340,650
+
+
+```
+  
+The welfare of gas consumers is $ ___.
+
+#### f) Local environmental damage
+
+A tax of $\$1.00$ doesn't cover all of local environmental damage, but it covers more than half of it, raising the tax to $\$2.00$.
+
+#### g) Rest of world environmental damage
+
+A tax of $\$1.00$ covers all of the world environmental damage and more. A socially optimum equilibirum is met at least with this externality. The MPC has captured the MEC value of this externality. The new supply curve with the tax is the MSC.
+
+#### h) Total revenue generated by the tax
+
+```{r Tax revenue}
+
+# Haley's math -----
+
+# y (new supply w/ tax) = 1/200,067x + 1
+# y agg. = 14.59968 - 1.932632e-05x
+
+# 14.59968 - 1.932632e-05x = 1/200,067x + 1
+# x = 559,091
+# y (new) = 3.7945
+# y (old) = 2.7945
+
+# tax revenue = 559,091
+
+# Find the difference in P (3.79-1) multiply by q_equil_tax to get tax revenue
+
+tax_revenue = (gas_price_tax - gas_tax)*q_equil_tax
+
+```
+
+The total revenue generated by the tax is `r tax_revenue`.
+
+## Question 4
+
+```{r Table of Welfare for Both Groups under Different Taxes}
+
+# Create vector for a range of different gas taxes
+gas_tax_vector = c(0, 1, 2, 3, 4, 5)
+
+# Create function for high income CS
+#cs_high_tax_function = function(t) {
+  #total_cs = 0.5*q*(p - gas_tax_vector) + (p - gas_tax_vector)*q
+#}
+
+# Create function for low income CS
+#cs_low_tax_function = function(t) {
+  #total_cs = 0.5*q*(p - gas_tax_vector) - (local_externality*___)
+#}
+
+# Create function for PS
+#ps_tax_function = 0.5*q*(p - gas_tax_vector)
+
+
+```
+
+#### a) overall welfare of 'High' income consumers
+
+```{r}
+
+# Haley's math ---
+
+# welfare before tax revenue = 4,374,390
+# gas comsumed = 458,203
+# % = 458,203/608,464 = 75%
+
+# 'High' income earners get 75% of tax reveneue, which is 419318.25
+
+# Total welfare = 4,793,708.3
+
+ # - it they only have to pay world externality ($.50) 
+ # - .50$ tax
+  
+#15.80343 - 2.730926e-05x = 1/200,067x + .50
+#x = 473,679
+#integrate 15.80343 - 2.730926e-05x from 0 to 473,679
+#= 4,422,040
+```
+
+
+
+#### b) overall welfare of 'Low' income consumers
+
+```{r}
+
+# Haley's math ---
+
+# welfare before tax = 1,009,490
+# gas consumed = 150,261
+# % = 150,261/608,464 = 25%
+
+# 'Low' income earners get 25% of tax reveneue, which is 139,772.75
+
+# Total welfare = 1,149,262.8
+```
+
+
+The low income customers have to pay a higher tax because they have greater MECs. We assume that they will cover both the local externality and the ROW externality.
+
+```{r Calculating global externality}
+
+global_externality = local_externality + row_externality
+
+# Haley's math ---
+# 11.68548 - 6.611437e-05x = 1/200,067x + 2
+# x = 136,199
+# integrate 11.68548 - 6.611437e-05x from 0 to 136,199
+# = 978,334
+```
+
+Global externality = $\$1.50 (local)$ + $\$0.50 (ROW)$ = $\$2.00$
+
+They will need to pay a $`r global_externality` tax.
+  
+
+Maybe the ideal tax is $\$1.25$ because $2 + .50 = 2.50$ which split between two groups is $1.25$. 
+
+#### c) gas producers
+
+```{r}
+
+# y (supply) = (1/200,067x) + 1 
+# y (aggregate demand) = 14.59968 - 1.932632e-05x
+
+# (1/200,067x) + 1 = 14.59968 - 1.932632e-05x
+# x = 559,091
+# integrate (1/200,067x) + 1 from 0 to 559,091
+# = 1,340,300
+```
+
+
+## Question 5 - EV Technology
+
+**Note:** For the following calculations, we divided the y-intercept of each demand curve by half.
+
+```{r New Demand Curves with Electric Vehicles}
+
+# Divide y-intercepts by 1/2
+
+# New low income curve:
+demand_low_ev = function(q){(11.7 - (6.61*10^{-5})*q)/2}
+
+# New high income curve:
+demand_high_ev = function(y){y = demand_high_ev_y - demand_high_slope*x}
+
+```
+
+#### a) gas consumption by 'High' income consumers
+
+```{r Gas Consumption by High Income w/ EV}
+
+# Calculate Q with new demand curve with original supply curve
+
+# Haley's math ---
+# old: y = 15.80343 - 0.00002730926x
+# 15.80343 - 0.00002730926x = 1/200,067x
+# x = 489,155
+# new: y = (15.80343/2) - 0.00002730926x
+# (15.80343/2) - 0.00002730926x = 1/200,067x
+# x = 244,578
+
+# Find new y-intercept
+demand_high_ev_y = demand_high_y/2
+
+# Find new equilibrium quantity
+q_high_ev = demand_high_ev_y/(supply_slope - demand_high_slope)
+
+# Calculate percentage decrease
+q_high_percentage = q_high_ev/q_high_cs*100
+
+```
+
+The new consumption by high income consumers is `r q_high_ev` gallons. Consumption decreases about `r round(q_high_percentage, 1)`%
+
+#### b) gas consumption by 'Low' income consumers
+
+```{r Gas Consumption by Low Income w/ EV}
+
+# Calculate Q with new demand curve with original supply curve
+
+# Haley's math ---
+# old: y = 11.68548 - 0.00006611437x
+# 11.68548 - 0.00006611437x = 1/200,067x
+# x = 164,323
+# new: y = (11.68548/2) - 0.00006611437x
+# (11.68548/2) - 0.00006611437x = 1/200,067x
+# x = 82,161.7
+
+# Find new y-intercept
+demand_low_ev_y = demand_low_y/2
+
+# Find new equilibrium quantity
+q_low_ev = demand_low_ev_y/(supply_slope - demand_low_slope)
+
+# Calculate percentage decrease
+q_low_percentage = q_low_ev/q_low_cs*100
+
+```
+
+The new consumption by high income consumers is `r q_low_ev` gallons. Consumption decreases about `r round(q_low_percentage, 1)`%
+
+#### c) gas price
+
+```{r Gas Price after EV}
+
+# Haley's math ---
+
+#old agg.: 14.59968 - 1.932632e-05x
+#14.59968 - 1.932632e-05x = 1/200,067x
+#x = 600,201
+#new agg.: (14.59968/2) - 1.932632e-05x
+#(14.59968/2) - 1.932632e-05x = 1/200,067x
+#x = 300,101
+#new equilibrium = 300,101 gallons at $1.49 /gallon
+
+# Find new aggregate demand curve ----
+
+# Find new y-intercept for original aggregate demand curve
+demand_agg_ev_y = demand_agg_y/2
+
+# Create new function for aggregate demand curve
+demand_agg_ev = function(x){y = demand_agg_ev_y + demand_agg_slope*x}
+
+# Find a Q for new equilibrium ----
+
+# Set new aggregate demand curve equal to original supply curve
+q_equil_ev = demand_agg_ev_y/(supply_slope - demand_agg_slope)
+
+# Find the new P for new equilibrum
+p_equil_ev = demand_agg_ev(q_equil_ev)
+
+```
+
+The new gas price is $`r p_equil_ev`.
+
+#### d) local environmental damage from gasoline
+
+$.5 * 1.50 * 300,101 = 225,075.75$
+
+#### e) rest of world environmental damage from gasoline
+
+$.5 * .50 * 300,101 = 75,025.25$
+
+
+## Question 6
+
+```{r Socially Optimal Tax}
+
+# Haley's math ---
+#new quantity with new technology = 300,101
+#old supply: y = 1/200,067x
+#new supply with tax: y = (1/200,067x) + $\tau$
+#solve for $\tau$
+#find P value from demand curve: 14.59968 - 1.932632e-05(300,101) = 8.79983204168
+#8.79983204168 = (1/200,067(300,101)) + $\tau$
+#$\tau$ = 7.29982954252
+#new supply with tax: y = (1/200,067x) + 7.29982954252
+
+# Write new supply equation with tax
+supply_curve_optimal_tax = function(x, y, t){
+  y = supply_slope*x + t
+}
+
+# Find P from demand curve using the equilbrium quantity from the EV calculations
+p_optimal_tax = demand_agg_y + demand_agg_slope*q_equil_ev
+
+# Find t by plugging new price back into the supply curve plus tax
+tax_optimal = p_optimal_tax - supply_slope*q_equil_ev
+
+
+
+```
+
+$\tau$ = `r round(tax_optimal, 2)`
+
+**New supply curve with optimal tax:** y = `r supply_slope`x + `r round(tax_optimal, 2)`
+
+A tax of $`r round(tax_optimal, 2)` makes the local environmental quality equal between the gas tax situation and the electric car situation.
+
+
+>>>>>>> be4b5bc4ac359d1f4e17917bacce46427f3bfe3a
