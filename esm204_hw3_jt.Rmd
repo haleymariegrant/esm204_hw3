@@ -1,0 +1,459 @@
+---
+title: "ESM 204 HW 3"
+author: "Jennifer Truong"
+date: "5/8/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE)
+
+# Attach packages
+
+library(tidyverse)
+library(janitor)
+library(ggpmisc)
+```
+
+## Initial info
+
+```{r initial info}
+
+gas_price = 3.00
+envi_externality = 1.50
+cc_externality = .50
+
+# Read in data
+
+gas_df <- read_csv("Homework 3 Data.csv") %>% 
+  clean_names() %>% 
+  mutate(
+    aggregate_q = q_low_gallons + q_high_gallons
+  )
+
+```
+
+## Question 1 
+
+#### Finding Supply and Demand Curves
+
+```{r individual demand curves}
+
+# Low income -----
+
+# Find demand curve for low income
+ggplot(gas_df, aes(x = q_low_gallons, y = price_dollars)) +
+  geom_point() +
+  geom_smooth(method = "lm",
+              se = FALSE,
+              formula = y ~ x) +
+    stat_poly_eq(parse = T,
+               aes(label = ..eq.label..),
+               formula = y ~ x)
+
+# Equation for low income demand curve
+demand_low = function(q){p = 11.7 - (6.61*10^(-5))*q} 
+
+# For low demand curve at P = 0, Q = 177004.538577912
+
+# 0 = 11.7 - 6.61*10^(-5)*q_low
+# -11.7 = -6.61*10^(-5)*q_low
+q_low = -11.7/(-6.61*10^(-5))
+
+# High income ----
+
+# Find demand curve for high income
+ggplot(gas_df, aes(x = q_high_gallons, y = price_dollars)) +
+  geom_point() +
+  geom_smooth(method = "lm",
+              se = FALSE,
+              formula = y ~ x) +
+    stat_poly_eq(parse = T,
+               aes(label = ..eq.label..),
+               formula = y ~ x)
+
+# Equation for high income demand curve
+demand_high = function(q){p = 15.8 - (2.73*10^(-5))*q} 
+
+# For high demand curve at P = 0, Q = 177004.538577912
+
+# 0 = 15.8 - 2.73*10^(-5)*q_high
+# -15.8 = -2.73*10^(-5)*q_high
+q_high = -15.8/(-2.73*10^(-5))
+
+```
+
+
+Low income demand curve: $P = 11.7 - (6.61*10^{-5})Q$
+
+High income demand curve: $P = 15.8 - (2.73*10^{-5})Q$
+
+```{r aggregate demand curve}
+# Find aggregate demand curve ----
+
+# Graph aggregate demand curve
+ggplot(gas_df, aes(x = aggregate_q, y = price_dollars)) +
+  geom_point() +
+  geom_smooth(method = "lm",
+              se = FALSE,
+              formula = y ~ x) +
+    stat_poly_eq(parse = T,
+               aes(label = ..eq.label..),
+               formula = y ~ x)
+
+# Equation for high income demand curve
+demand_agg = function(q){p = 15 - (2.04*10^(-5))*q}
+
+# For aggregate demand curve at P = 0, Q = 735294.117647059
+
+# 0 = 15 - 2.04*10^(-5)*q_low
+# -15 = -2.04*10^(-5)*q_low
+q_agg = -15/(-2.04*10^(-5))
+```
+
+Aggregate demand curve: $P = 15 - (2.04*10^{-5})Q$
+
+Supply curve: $P = 5.110*10^{-6}Q$
+
+```{r Graphing all demand curves with supply curve}
+# Supply Curve -------
+
+# The marginal cost of producing a gallon of gasoline is linear and has price-intercept of 0.
+
+# For current price to be 3, the supply curve must intersect the aggregate demand curve at P = 3.
+
+# Finding market equilibrium ----
+
+# Set supply and aggregate demand curves equal to each other to find Q
+# 3 = 15 - (2.04*10^-5)Q
+# -12 = -2.04*10^(-5)Q
+q_equil = -12/(-2.04*10^(-5))
+
+supply_slope = (3-0)/(q_equil - 0)
+
+supply_curve = function(q){p = supply_slope*q}
+
+# Supply curve equation = 5.1e-06x
+
+# Supply and Demand Plot ----
+
+gas_plot = ggplot(data = gas_df, mapping = aes(x = aggregate_q,
+                                    y = price_dollars)) +
+  stat_function(fun = demand_low,
+                aes(color = "demand_low")) +
+  stat_function(fun = demand_high,
+                aes(color = "demand_high")) +
+  stat_function(fun = demand_agg,
+                aes(color = "demand_agg"),
+                size = 1.5) +
+  stat_function(fun = supply_curve,
+                aes(color = "supply_curve"),
+                size = 1.5) + # Supply curve
+  geom_hline(yintercept=0, color="black") + # Emphasize y-axis
+  geom_vline(xintercept=0, color="black") + # Emphasize x-axis
+  expand_limits(x=c(0,750000), y=c(0, 15))
+
+gas_plot
+
+```
+
+At market equilibrium, the price is `r gas_price` dollars and the quantity is `r q_equil` gallons. 
+
+####  Finding benefits
+
+```{r Benefits}
+# Consumer Benefit ---
+
+cs_agg = 0.5*(15-3)*q_equil
+
+# Producer Benefit ---
+
+ps_statquo = 0.5*3*q_equil
+
+```
+
+- The benefit to consumers under the status quo is `r cs_agg`
+- The benefit to producers under the status quo is `r ps_statquo`
+
+#### Envi Cost
+
+```{r}
+# Graph with MEC ----
+
+gas_mec_graph = gas_plot + 
+  geom_hline(yintercept=1.5, color="brown", size=0.7) # MEC curve
+
+gas_mec_graph
+
+# Finding Envi Cost Locally ----
+
+envi_cost_gas = envi_externality*q_equil
+envi_cost_gas_global = cc_externality*q_equil
+```
+
+The local environmental cost under the status quo is $`r envi_cost_gas`
+
+The global environmental cost under the status quo is $`r envi_cost_gas_global`
+
+## Question 2
+
+#### Individual CS for both Low Income and High Income
+
+```{r Low Income CS}
+
+# Find Q at equilbrium -----
+
+# 3 = 11.7 - 6.61*10^(-5)*q_low
+# (3-11.7) = - 6.61*10^(-5)*q_low
+
+q_low_cs = (3-11.7)/(- 6.61*10^(-5))
+  
+# Low Income CS ------
+
+cs_low = 0.5*(11.7-3)*q_low_cs
+
+```
+
+The consumer benefit for low income is `r cs_low`
+
+```{r High Income CS}
+
+# Find Q at equilbrium -----
+
+# 3 = 15.8 - 2.73*10^(-5)*q_high
+# (3-15.8) = -2.73*10^(-5)*q_high
+
+q_high_cs = (3-15.8)/(-2.73*10^(-5))
+  
+# High Income CS ------
+
+cs_high = 0.5*(15.8-3)*q_high_cs
+
+```
+
+The consumer benefit for high income is `r cs_high`
+
+## Question 3
+
+#### a) Effect on amount of gas produced and consumed
+
+Supply curve after the tax: $P = (5.110*10^{-6})Q + 1.00$
+
+```{r Equilibrium shift after tax}
+
+# Find new supply curve after tax - just add 1 to y-intercept?
+
+supply_curve_tax = function(q){p = supply_slope*q + 1.00}
+
+# Find equilibrium after tax  ----
+
+# Set supply and aggregate demand curves equal to each other to find Q
+# (5.110*10^-6)Q + 1 = 15 - (2.04*10^-5)Q
+# (5.110*10^-6)Q + (2.04*10^-5)Q = 14
+q_equil_tax = 14/((5.110*10^-6) + (2.04*10^-5))
+
+```
+
+It would reduce the equilibrium quantity to `r q_equil_tax` gallons, down by `r round(100-(q_equil_tax/q_equil*100), 2)`%.
+
+#### b) Price on gas
+
+```{r Gas Price after tax}
+
+gas_price_tax = gas_price + 1
+
+```
+
+
+It would increase the curent price from 3 to `r gas_price_tax` dollars.
+
+#### c) Welfare of “High” income consumers.
+
+```{r High Income CS after Tax}
+
+# Find new Q for equil for high income after tax
+
+# 4 = 15.8 - 2.73*10^(-5)*q_high_tax
+# (4-15.8) = -2.73*10^(-5)*q_high_tax
+
+q_high_tax = (4-15.8)/(-2.73*10^(-5))
+
+# Plug in 4 as the new equil price and __ as the new equil quantity
+
+cs_high_tax = 0.5*(15.8-4)*q_high_tax
+```
+
+The tax would reduce the welfare of high income customers to `r cs_high_tax`, down by `r round(100-(cs_high_tax/cs_high*100), 2)`%.
+
+#### d) Welfare of “Low” income consumers.
+
+```{r Low Income CS after Tax}
+
+# Find new Q for equil for low income after tax
+
+# 4 = 11.7 - 6.61*10^(-5)*q_low_tax - plug in 4 for P
+# 4-11.7 = -6.61*10^(-5)*q_low_tax
+
+q_low_tax = (4-11.7)/(-6.61*10^(-5))
+
+# Plug in 4 as the new equil price and __ as the new equil quantity
+
+cs_low_tax = 0.5*(11.7-4)*q_low_tax
+```
+
+The tax would reduce the welfare of low income customers to `r cs_low_tax`, down by `r round(100-(cs_low_tax/cs_low*100), 2)`%.
+
+#### e) Welfare of gas producers.
+
+```{r PS after tax}
+
+# Find Q on original supply curve at P = 1
+
+# 1 = 5.110*10^(-6)*q_prod_tax
+q_prod_tax = 1/(5.110*10^(-6))
+
+# Find PS after tax
+
+ps_tax = 0.5*1*q_prod_tax
+
+```
+
+The tax would reduce the welfare of high income customers to `r ps_tax`, down by `r round(100-(ps_tax/ps_statquo*100), 2)`%.
+
+#### f) Local environmental damage.
+
+```{r Local Externality after Tax}
+
+# Subtract $1.00 from the local externality of $1.50
+
+```
+
+$1.50 - 1.00 = 0.50$
+
+The tax would cover two thirds of the original local externality of 1.50, leaving $0.50 behind. 
+
+#### g) Rest of world environmental damage.
+
+```{r Global Externality after Tax}
+
+# Subtract $1.00 from the global climate change externality of $0.50
+
+```
+
+$0.50 - 1.00 = -0.50$
+
+The tax would cover the whole climate change externality.
+
+#### h) Total revenue generated by the tax.
+
+```{r Tax revenue}
+
+# Find the difference in P (4-1) multiply by q_equil_tax to get tax revenue
+
+tax_revenue = (gas_price_tax - gas_price)*q_equil_tax
+```
+
+The total revenue generated by the tax would be $`r tax_revenue`
+
+## Question 4
+
+#### a) Overall welfare of “High” income consumers
+#### b) Overall welfare of “Low” income consumers
+#### c) Gas producers
+
+## Question 5 - Electric Vehicle
+
+```{r New Demand Curves with Electric Vehicles}
+
+# Low income demand curve: P = 11.7 - (6.61*10^{-5})Q
+# New low income curve:
+demand_low_ev = function(q){(11.7 - (6.61*10^{-5})*q)/2}
+
+# High income demand curve: P = 15.8 - (2.73*10^{-5})
+# New high income curve:
+demand_high_ev = function(p, q){p = (15.8 - (2.73*10^{-5})*q)/2}
+
+```
+
+#### a) Gas consumption by “High” income consumers
+
+```{r Gas Consumption by High Income w/ EV}
+
+# Calculate Q with new demand curve with P at 3
+
+# 3 = (15.8 - (2.73*10^{-5})*q_high_ev)/2
+q_high_ev = (6 - 15.8)/(-2.73*10^{-5})
+
+```
+
+The gas consumption by the high income consumers would decrease to `r q_high_ev` gallons, down by `r round(100-(q_high_ev/q_high*100), 2)`%
+
+#### b) Gas consumption by “Low” income consumers
+
+```{r Gas Consumption by Low Income w/ EV}
+
+# Calculate Q with new demand curve with P at 3
+
+# 3 = (11.7 - (6.61*10^{-5})*q_low_ev))/2
+q_low_ev = (6 - 11.7)/(-6.61*10^{-5})
+
+```
+
+The gas consumption by the low income consumers would decrease to `r q_low_ev` gallons, down by `r round(100-(q_low_ev/q_low*100), 2)`%
+
+#### c) Gas price
+
+```{r}
+
+# Find new aggregate demand curve ----
+
+# Reduce original aggregate demand curve by half
+# p = (15 - (2.04*10^(-5))*q_agg_ev)/2
+demand_agg_ev = function(q){(15 - (2.04*10^(-5))*q)/2}
+
+# Find a Q for new equilibrium ----
+
+# Set new aggregate demand curve equal to original supply curve
+# (15 - (2.04*10^(-5))*q_agg_ev)/2 = (5.110*10^(-6))*q_agg_ev
+# (15 - (2.04*10^(-5))*q_agg_ev) = 2(5.110*10^(-6))*q_agg_ev
+# 15 = 2(5.110*10^(-6))*q_agg_ev + (2.04*10^(-5))*q_agg_ev
+q_equil_ev = 15/(2*(5.110*10^(-6)) + (2.04*10^(-5)))
+
+# Find the new P for new equilibrum
+p_equil_ev = demand_agg_ev(q_equil_ev)
+
+```
+
+The gas price decreases to $`r round(p_equil_ev, 2)`, down by `r round(100-(p_equil_ev/gas_price*100), 2)`%
+
+#### d) Local environmental damage from gasoline
+
+```{r Local externality after EV}
+
+envi_cost_gas_ev = envi_externality*q_equil_ev
+
+```
+
+The local environmental cost with EV implementation is $`r envi_cost_gas_ev`
+
+#### e) Rest of world environmental damage from gasoline
+
+```{r Global Externality after EV}
+
+envi_cost_gas_global_ev = cc_externality*q_equil_ev
+
+```
+
+The global environmental cost with EV implementation is $`r envi_cost_gas_global_ev`
+
+## Question 6
+
+```{r Existing tax revenue under EV}
+
+# Find tax revenue with EV
+tax_revenue_ev = (gas_price - p_equil_ev)*q_equil_ev
+```
+ 
+The tax revenue with the gas tax is $`r tax_revenue`, while the tax revenue with the electric car technology and without the tax  is `r tax_revenue_ev`.
