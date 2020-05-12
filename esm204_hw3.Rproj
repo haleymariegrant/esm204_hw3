@@ -11,7 +11,7 @@ Encoding: UTF-8
 
 RnwWeave: Sweave
 LaTeX: pdfLaTeX
-=======
+
 Version: 1.0
 
 RestoreWorkspace: Default
@@ -25,4 +25,3 @@ Encoding: UTF-8
 
 RnwWeave: Sweave
 LaTeX: pdfLaTeX
->>>>>>> be4b5bc4ac359d1f4e17917bacce46427f3bfe3a
