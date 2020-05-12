@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 ---
 title: "ESM 204 HW 3"
 author: "Jennifer Truong"
